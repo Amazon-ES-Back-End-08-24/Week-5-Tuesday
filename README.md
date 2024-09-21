@@ -1,3 +1,42 @@
+# Week 5
+# Tabla de Contenidos
+
+- [Dónde encontrar la query console](#dónde-encontrar-la-query-console)
+- [Tabla Original](#tabla-original)
+- [1NF (Primera Forma Normal)](#1nf)
+- [2NF (Segunda Forma Normal)](#2nf)
+- [3NF (Tercera Forma Normal)](#3nf)
+- [Data Definition Language (DDL)](#data-definition-language-ddl)
+  - [CREATE](#create)
+  - [ALTER](#alter)
+  - [DROP](#drop)
+- [Data Manipulation Language (DML)](#data-manipulation-language-dml)
+  - [UPDATE](#update)
+  - [Consultas SQL Básicas](#consultas-sql-básicas)
+    - [INSERT INTO – Insertar datos en una tabla](#insert-into--insertar-datos-en-una-tabla)
+    - [SELECT – Consultar datos de una tabla](#select--consultar-datos-de-una-tabla)
+  - [Consultas con Agregación](#consultas-con-agregación)
+    - [COUNT – Contar filas](#count--contar-filas)
+    - [SUM – Sumar valores](#sum--sumar-valores)
+    - [AVG – Calcular promedio](#avg--calcular-promedio)
+    - [MIN/MAX – Valor mínimo y máximo](#minmax--valor-mínimo-y-máximo)
+  - [Operadores Lógicos](#operadores-lógicos)
+    - [LIKE](#like)
+    - [BETWEEN](#between)
+  - [JOINs en SQL](#joins-en-sql)
+    - [INNER JOIN](#inner-join)
+      - [Libros INNER JOIN Ventas](#libros-inner-join-ventas)
+    - [LEFT JOIN](#left-join)
+      - [Libros LEFT JOIN Ventas](#libros-left-join-ventas)
+    - [RIGHT JOIN](#right-join)
+      - [Libros RIGHT JOIN Ventas](#libros-right-join-ventas)
+    - [FULL JOIN](#full-join)
+      - [Libros FULL JOIN Ventas](#libros-full-join-ventas)
+- [Ejercicio Práctico: Gestión de Inventario en una Tienda de Discos](#ejercicio-práctico-gestión-de-inventario-en-una-tienda-de-discos)
+  - [Contexto](#contexto)
+  - [Tareas](#tareas)
+  - [Entregables](#entregables)
+
 ## Dónde encontrar la query console
 
 Se encuentra en el archivo, en este proyecto, [query_console.sql](query_console.sql)
@@ -246,7 +285,118 @@ WHERE LibroPrecio BETWEEN 15 AND 25;
 
 ---
 
-## Ejercicio Práctico: Gestión de Inventario en una Tienda de Discos (45 min)
+### JOINs en SQL
+
+Los **JOINs** son utilizados para combinar datos de varias tablas relacionadas en una sola consulta. A continuación, se explican los tipos más comunes de JOINs.
+
+#### **INNER JOIN**
+Devuelve filas donde hay coincidencias en ambas tablas.
+
+```sql
+SELECT Ventas.VentaID, ClienteNombre, LibroTitulo, FechaVenta
+FROM Ventas
+INNER JOIN Libros ON Ventas.LibroID = Libros.LibroID;
+```
+Este `INNER JOIN` devuelve detalles de cada venta junto con la información del libro vendido.
+
+##### Libros INNER JOIN Ventas
+Devuelve filas donde hay coincidencias en ambas tablas. Solo Libro1 y Libro3 tienen ventas correspondientes, por lo que son las únicas filas devueltas.
+
+```
+| Libro       | Venta        |
+|-------------|--------------|
+| Libro1      | Venta1       |
+| Libro3      | Venta3       |
+```
+---
+
+#### **LEFT JOIN**
+Devuelve todas las filas de la tabla izquierda y las coincidencias de la tabla derecha. Si no hay coincidencias, devuelve `NULL`.
+
+```sql
+SELECT Libros.LibroTitulo, Ventas.VentaID, FechaVenta
+FROM Libros
+LEFT JOIN Ventas ON Libros.LibroID = Ventas.LibroID;
+```
+Este `LEFT JOIN` muestra todos los libros y cualquier venta asociada (o `NULL` si el libro no tiene ventas).
+
+##### Libros LEFT JOIN Ventas
+
+Incluye todos los registros de la tabla izquierda (Libros), y los registros coincidentes de la tabla derecha (Ventas). Si no hay coincidencia, el resultado es NULL en la tabla derecha.
+
+```
+| Libro       | Venta        |
+|-------------|--------------|
+| Libro1      | Venta1       |
+| Libro2      | NULL         |  <- No sale for Libro2
+| Libro3      | Venta3       |
+```
+---
+#### **RIGHT JOIN**
+Devuelve todas las filas de la tabla derecha y las coincidencias de la izquierda.
+
+```sql
+SELECT Ventas.VentaID, ClienteNombre, LibroTitulo
+FROM Ventas
+RIGHT JOIN Libros ON Ventas.LibroID = Libros.LibroID;
+```
+Muestra todas las ventas, incluidas aquellas que no tienen un libro asociado.
+
+##### Libros RIGHT JOIN Ventas
+
+Incluye todos los registros de la tabla derecha (Ventas), y los registros coincidentes de la tabla izquierda (Libros). Si no hay coincidencia, el resultado es NULL en la tabla izquierda.
+
+```
+| Libro       | Venta        |
+|-------------|--------------|
+| Libro1      | Venta1       |
+| NULL        | Venta2       |  <- Venta2 has no corresponding book (hypothetical)
+| Libro3      | Venta3       |
+```
+---
+#### **FULL JOIN**
+Devuelve todas las filas cuando hay una coincidencia en cualquiera de las tablas.
+En MySQL no tenemos esta opción, por lo que tenemos que simularlo haciendo left + right join
+
+`FULL JOIN` muestra todos los libros y todas las ventas, incluyendo aquellas sin coincidencias.
+
+```sql
+SELECT Libros.LibroTitulo AS Libro,
+Ventas.VentaId     AS Venta
+FROM Libros
+LEFT JOIN Ventas ON Libros.LibroId = Ventas.LibroId
+UNION ALL
+SELECT Libros.LibroTitulo AS Libro,
+Ventas.VentaId     AS Venta
+FROM Libros
+RIGHT JOIN Ventas ON Libros.LibroId = Ventas.LibroId
+WHERE Libros.LibroId IS NULL; -- so there is no duplication
+```
+
+`UNION ALL` es un operador que combina los resultados de dos o más `SELECT` incluyendo duplicados. `UNION` hace lo mismo pero sin devolver duplicados.
+
+En otras bases de datos que sí soportan `FULL JOIN` sería así:
+```sql
+SELECT Libros.LibroTitulo AS Libro, Ventas.VentaId AS Venta
+FROM Libros
+FULL JOIN Ventas ON Libros.LibroId = Ventas.LibroId;
+```
+
+##### Libros FULL JOIN Ventas
+
+Incluye todos los registros cuando hay una coincidencia en alguna de las tablas, izquierda o derecha. Donde no hay entradas correspondientes, los resultados son NULL en el lado sin coincidencia.
+
+```
+| Libro       | Venta        |
+|-------------|--------------|
+| Libro1      | Venta1       |
+| Libro2      | NULL         |  <- No sale for Libro2
+| NULL        | Venta2       |  <- Venta2 has no corresponding book (hypothetical)
+| Libro3      | Venta3       |
+```
+---
+
+## Ejercicio Práctico: Gestión de Inventario en una Tienda de Discos
 
 ### Contexto:
 
@@ -311,10 +461,32 @@ ejercicio es que practiques la creación de tablas, manipulación de datos, y re
 - Realiza una consulta que seleccione los discos cuyo precio esté dentro de un rango específico (por ejemplo, entre 10 y
   50).
 
-10. **Eliminar una Tabla**:
+10. **Consultas con `ORDER BY`**:
 
-- Elimina la tabla `Ventas` al final del ejercicio.
+- **Consulta 10**: Ordena los discos por el precio, de mayor a menor.
+- **Consulta 11**: Ordena las ventas por la fecha de venta.
 
+11. **Consultas con `GROUP BY` y `HAVING`**:
+
+- **Consulta 12**: Agrupa las ventas por `DiscoID` y cuenta cuántas veces se ha vendido cada disco.
+- **Consulta 13**: Agrupa las ventas por `DiscoID` y selecciona solo los discos que se han vendido más de 2 veces, utilizando `HAVING`.
+
+12. **Consulta con `DISTINCT`**:
+
+- **Consulta 14**: Selecciona los diferentes géneros disponibles en la tienda (sin duplicados).
+
+13. **Consultas con `JOINs`**:
+
+- **INNER JOIN**:
+  - **Consulta 15**: Selecciona todas las ventas con el nombre del disco correspondiente, utilizando un `INNER JOIN`.
+- **LEFT JOIN**:
+  - **Consulta 16**: Muestra todos los discos y sus ventas, incluyendo aquellos discos que no han sido vendidos, utilizando un `LEFT JOIN`.
+- **RIGHT JOIN**:
+  - **Consulta 17**: Muestra todas las ventas, incluyendo aquellos registros de ventas que no tienen un disco correspondiente, utilizando un `RIGHT JOIN`.
+
+14. **Eliminar una Tabla**:
+
+- **Elimina la tabla `Ventas`** al final del ejercicio.
 ---
 
 ### Entregables:
